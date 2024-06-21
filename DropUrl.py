@@ -14,6 +14,13 @@ class BurpExtender(IBurpExtender, IProxyListener):
         "https://google.com"
     ]
 
+    def parseHost(self, parsedUrl):
+        scheme = parsedUrl.getProtocol()
+        host = parsedUrl.getHost()
+        newUrlStr = scheme+"://"+host
+        newUrl = URL(newUrlStr)
+        return newUrl
+
     def	registerExtenderCallbacks(self, callbacks):
         self._callbacks = callbacks
         self._helpers = callbacks.getHelpers()
@@ -27,12 +34,7 @@ class BurpExtender(IBurpExtender, IProxyListener):
         for url in _blackList:
             self._callbacks.excludeFromScope(URL(url))
 
-    def parseHost(parsedUrl):
-        scheme = parsedUrl.getProtocol()
-        host = parsedUrl.getHost()
-        newUrlStr = scheme+"://"+host
-        newUrl = URL(newUrlStr)
-        return newUrl
+
 
     def processProxyMessage(self, messageIsRequest, message):
         if messageIsRequest:
@@ -41,11 +43,12 @@ class BurpExtender(IBurpExtender, IProxyListener):
             requestInfo = self._helpers.analyzeRequest(messageInfo)
             
             url = str(requestInfo.getUrl())
-            newUrl = parseHost(requestInfo.getUrl())
+            newUrl = self.parseHost(requestInfo.getUrl())
             
-            if self._exclude in url:
+            if any(black_url in url for black_url in self._blackList):
                 self._stdout.println("Dropped")
                 message.setInterceptAction(message.ACTION_DROP)
-            else:
-                if not self._callbacks.isInScope(newUrl):
-                    self._callbacks.includeInScope(newUrl)
+                return
+            
+            if not self._callbacks.isInScope(newUrl):
+                self._callbacks.includeInScope(newUrl)
