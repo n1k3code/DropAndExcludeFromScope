@@ -46,7 +46,7 @@ class BurpExtender(IBurpExtender, IProxyListener):
             newUrl = self.parseHost(requestInfo.getUrl())
             
             if any(black_url in url for black_url in self._blackList):
-                self._stdout.println("Dropped")
+                #self._stdout.println("Dropped")
                 message.setInterceptAction(message.ACTION_DROP)
                 return
             
